@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kawaii Scavenger Hunt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=Sniglet:wght@400;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pink:#ddb5c9; --pink-d:#b27ea6; --mint:#bdd9c3; --mint-d:#4a8045;
+  --lav:#c8b2cf; --lav-d:#7f75a8; --butter:#eed8bc; --butter-d:#e5a866;
+  --peach:#e9c1b5; --peach-d:#d1703f; --sky:#b6cfe6; --sky-d:#6d7bae;
+  --cream:#fffaf3; --ink:#4b2f52; --ink-soft:#85698c; --white:#fff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{
+  font-family:"Sniglet",system-ui,sans-serif;color:var(--ink);
+  background:#f6eff3;
+  background-image:radial-gradient(#e6cfdc 2px,transparent 2.5px),radial-gradient(#d5dcea 2px,transparent 2.5px);
+  background-size:28px 28px;background-position:0 0,14px 14px;
+  min-height:100vh;padding:0 16px 80px;overflow-x:hidden;
+}
+h1,h2,h3,.pop{font-family:"Hachi Maru Pop","Sniglet",sans-serif;font-weight:400}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:560px;margin:0 auto}
+
+/* floating sparkles */
+.sparkle{position:fixed;pointer-events:none;z-index:0;opacity:.7;animation:floaty 7s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-18px) rotate(20deg)}}
+
+/* header */
+header{text-align:center;padding:28px 0 8px;position:relative;z-index:1}
+.badge{display:inline-block;background:var(--white);border:3px solid var(--ink);border-radius:999px;padding:4px 14px;font-weight:600;font-size:13px;letter-spacing:.5px;box-shadow:3px 3px 0 var(--ink)}
+header h1{font-size:clamp(30px,8vw,44px);line-height:1.05;margin:14px 0 6px;color:#ad3f78;
+  text-shadow:3px 3px 0 var(--white),5px 5px 0 var(--ink)}
+header p{margin:0 auto;max-width:400px;color:var(--ink-soft);font-weight:500}
+
+/* screens */
+.screen{display:none;position:relative;z-index:1}
+.screen.show{display:block;animation:pop .35s ease}
+@keyframes pop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+
+.panel{background:var(--white);border:3px solid var(--ink);border-radius:26px;padding:22px;box-shadow:6px 6px 0 var(--ink);margin:18px 0}
+.rules li{margin:6px 0;font-weight:500}
+.rules{padding-left:20px;margin:10px 0 0}
+label.field{display:block;font-weight:600;margin:14px 0 6px}
+input[type=text],textarea{width:100%;font:inherit;font-size:16px;color:var(--ink);background:#fff7fb;border:3px solid var(--ink);border-radius:16px;padding:10px 14px;outline:none}
+input[type=text]:focus,textarea:focus{background:#fff;box-shadow:0 0 0 4px var(--pink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:3px solid var(--ink);border-radius:999px;padding:12px 22px;font-size:17px;font-weight:700;color:var(--ink);background:var(--pink);box-shadow:4px 4px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.big{width:100%;padding:16px;font-size:20px;margin-top:18px}
+.btn.mint{background:var(--mint)} .btn.lav{background:var(--lav)} .btn.butter{background:var(--butter)} .btn.white{background:#fff}
+.btn.small{padding:8px 14px;font-size:14px}
+
+/* progress */
+.progress{position:sticky;top:0;z-index:5;background:rgba(255,240,246,.92);backdrop-filter:blur(6px);padding:12px 0 10px;margin:0 -16px;padding-left:16px;padding-right:16px}
+.progress .row{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;max-width:560px;margin:0 auto 8px}
+.track{position:relative;height:22px;border:3px solid var(--ink);border-radius:999px;background:#fff;max-width:560px;margin:0 auto;overflow:visible}
+.fill{height:100%;border-radius:999px;background:repeating-linear-gradient(-45deg,#e5a866 0 10px,#eed8bc 10px 20px);width:0;transition:width .6s cubic-bezier(.3,1.4,.5,1)}
+.runner{position:absolute;top:-17px;left:0;width:42px;height:42px;transform:translateX(-50%);transition:left .6s cubic-bezier(.3,1.4,.5,1)}
+.runner svg{animation:hop .9s ease-in-out infinite}
+@keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+
+/* stop cards */
+.cards{display:grid;gap:22px;margin-top:16px}
+.card{perspective:1200px;position:relative}
+.card-inner{position:relative;transition:transform .7s cubic-bezier(.4,1.5,.5,1);transform-style:preserve-3d;min-height:480px}
+.card.flipped .card-inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border:3px solid var(--ink);border-radius:28px;box-shadow:6px 6px 0 var(--ink);overflow:hidden;display:flex;flex-direction:column}
+.front{background:var(--c);cursor:pointer;align-items:center;justify-content:center;text-align:center;padding:24px}
+.front .num{position:absolute;top:14px;left:14px;width:46px;height:46px;border-radius:50%;background:#fff;border:3px solid var(--ink);display:grid;place-items:center;font-family:"Hachi Maru Pop";font-size:18px}
+.front .tag{position:absolute;top:18px;right:16px;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px}
+.front h2{margin:8px 0 4px;font-size:30px;color:var(--ink)}
+.front .hint{font-weight:600;color:var(--ink);opacity:.75}
+.front .tap{margin-top:14px;background:#fff;border:3px solid var(--ink);border-radius:999px;padding:6px 16px;font-weight:700;animation:wiggle 2.4s ease-in-out infinite}
+@keyframes wiggle{0%,90%,100%{transform:rotate(0)}93%{transform:rotate(-6deg)}96%{transform:rotate(6deg)}}
+.mascot{width:150px;height:150px}
+.mascot svg{width:100%;height:100%;animation:bob 3s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+.back{background:#fff;transform:rotateY(180deg);padding:0}
+.back .top{background:var(--c);border-bottom:3px solid var(--ink);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.back .top h3{margin:0;font-size:20px}
+.flipback{background:#fff;border:3px solid var(--ink);border-radius:999px;width:38px;height:38px;font-size:18px;font-weight:700;flex:none}
+.back .body{padding:16px 18px 18px;overflow-y:auto;flex:1}
+.section-label{font-family:"Hachi Maru Pop";font-size:13px;color:var(--cd);margin:0 0 4px;letter-spacing:.5px}
+.direction{background:#fffaf0;border:2px dashed var(--cd);border-radius:16px;padding:10px 12px;margin-bottom:12px;font-weight:500}
+.mission{font-size:18px;font-weight:700;margin:0 0 12px}
+.maplink{font-weight:600;color:var(--cd);font-size:14px}
+.photo-row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.photo-btn{position:relative;overflow:hidden}
+.photo-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.thumb{width:64px;height:64px;border-radius:14px;border:3px solid var(--ink);object-fit:cover;display:none}
+.thumb.has{display:block}
+textarea{min-height:62px;resize:vertical;font-size:15px}
+.found{width:100%;margin-top:14px;background:var(--c)}
+.card.done .found{background:#fff}
+
+/* stamp */
+.stamp{position:absolute;right:-8px;bottom:-10px;width:118px;height:118px;z-index:3;pointer-events:none;transform:scale(0) rotate(-30deg);transition:transform .5s cubic-bezier(.3,1.8,.5,1)}
+.card.done .stamp{transform:scale(1) rotate(-12deg)}
+
+/* finale */
+.finale{text-align:center}
+.finale h2{font-size:32px;color:#ad3f78;text-shadow:3px 3px 0 var(--ink);margin:10px 0}
+.haul{text-align:left;list-style:none;padding:0;margin:16px 0 0}
+.haul li{display:flex;gap:12px;align-items:center;border:3px solid var(--ink);border-radius:18px;padding:10px;margin:10px 0;background:var(--c)}
+.haul img{width:54px;height:54px;border-radius:12px;border:2px solid var(--ink);object-fit:cover}
+.haul .dot{width:54px;height:54px;border-radius:12px;border:2px solid var(--ink);background:#fff;display:grid;place-items:center;font-size:24px;flex:none}
+.haul b{display:block}
+.haul span{font-size:14px;color:var(--ink)}
+
+.footer-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+
+/* toast + confetti */
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:10px 20px;font-weight:700;box-shadow:4px 4px 0 var(--ink);z-index:50;transition:transform .4s cubic-bezier(.3,1.6,.5,1);white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:40}
+/* two player bits */
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pick button{border:3px solid var(--ink);border-radius:20px;padding:12px 8px;background:#fff;box-shadow:4px 4px 0 var(--ink);font-weight:700;font-size:16px;color:var(--ink);display:flex;flex-direction:column;align-items:center;gap:4px}
+.pick button svg{width:58px;height:58px}
+.pick button.on{background:var(--pc)}
+.pick button:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.small-note{font-size:13px;color:var(--ink-soft);margin:6px 2px 0;font-weight:500}
+.score{max-width:560px;margin:0 auto 10px}
+.score .row{margin-bottom:16px!important}
+.score .who{display:flex;align-items:center;gap:6px}
+.score .me-tag{background:#fff;border:2px solid var(--ink);border-radius:999px;font-size:11px;padding:0 7px}
+.score .fill.p2{background:repeating-linear-gradient(-45deg,#8bbd6e 0 10px,#bdd9c3 10px 20px)}
+.sync{font-size:12px;font-weight:600;color:var(--ink-soft);text-align:center;margin-top:2px}
+.sync b{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ccc;margin-right:5px;vertical-align:0}
+.sync.live b{background:var(--mint-d)}
+.friend{position:absolute;bottom:16px;left:50%;transform:translateX(-50%) scale(0);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:3px 12px;font-weight:700;font-size:13px;white-space:nowrap;transition:transform .4s cubic-bezier(.3,1.8,.5,1)}
+.friend.on{transform:translateX(-50%) scale(1)}
+.haul-title{font-family:"Hachi Maru Pop";font-size:18px;margin:22px 0 0;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.haul-title small{font-family:"Sniglet";font-weight:600;font-size:13px;color:var(--ink-soft)}
+.winner{display:inline-block;background:var(--butter);border:3px solid var(--ink);border-radius:999px;padding:4px 14px;font-weight:700;margin-top:8px}
+
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+  <header>
+    <span class="badge">✿ Westfield Valley Fair ✿</span>
+    <h1>Kawaii<br>Scavenger Hunt</h1>
+    <p>Two hunters. Eight cute stops. One very adorable race.</p>
+  </header>
+
+  <!-- START -->
+  <section class="screen" id="start">
+    <div class="panel">
+      <h3 style="margin:0 0 6px;font-size:20px">How to play ♡</h3>
+      <ul class="rules">
+        <li>Each hunter opens this page on their own phone.</li>
+        <li>Use the same hunt code, and pick a different player.</li>
+        <li>Tap a card to flip it and read your directions and mission.</li>
+        <li>Write what you picked (at the photo booth, just take a picture).</li>
+        <li>Press <b>Found it!</b> to earn a stamp. Your friend sees it live!</li>
+        <li>Collect all eight stamps to unlock your haul card.</li>
+      </ul>
+      <label class="field">Which hunter are you?</label>
+      <div class="pick" id="pick">
+        <button data-p="p1" style="--pc:#eed8bc"><span id="pickArt1"></span>Player 1</button>
+        <button data-p="p2" style="--pc:#bdd9c3"><span id="pickArt2"></span>Player 2</button>
+      </div>
+      <label class="field" for="name">Your name</label>
+      <input id="name" type="text" placeholder="Mochi" maxlength="24">
+      <label class="field" for="room">Hunt code</label>
+      <input id="room" type="text" placeholder="valleyfair" maxlength="30" autocapitalize="off">
+      <p class="small-note">Both hunters type the same code. Use a new code for a brand new hunt.</p>
+      <button class="btn big" id="go">Start the hunt ✧</button>
+    </div>
+  </section>
+
+  <!-- HUNT -->
+  <section class="screen" id="hunt">
+    <div class="progress">
+      <div class="score" id="score"></div>
+      <div class="sync" id="sync"><b></b>connecting...</div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="footer-actions">
+      <button class="btn lav small" id="hauls">See both hauls</button>
+      <button class="btn white small" id="switchBtn">Switch player or code</button>
+      <button class="btn white small" id="resetBtn">Clear my cards</button>
+    </div>
+  </section>
+
+  <!-- FINALE -->
+  <section class="screen" id="finale">
+    <div class="panel finale">
+      <div class="mascot" style="margin:0 auto" id="finaleMascot"></div>
+      <h2 id="finaleHead">You did it!</h2>
+      <div id="winner"></div>
+      <div id="haulLists"></div>
+      <div class="footer-actions">
+        <button class="btn lav" id="backBtn">Back to cards</button>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- original mascot builder ---------- */
+function mascot(body, cheek, ears, extra=''){
+  const earShapes = {
+    bunny:`<ellipse cx="72" cy="40" rx="13" ry="34" fill="${body}" stroke="#4b2f52" stroke-width="5"/><ellipse cx="128" cy="40" rx="13" ry="34" fill="${body}" stroke="#4b2f52" stroke-width="5"/><ellipse cx="72" cy="44" rx="5" ry="20" fill="${cheek}"/><ellipse cx="128" cy="44" rx="5" ry="20" fill="${cheek}"/>`,
+    cat:`<path d="M52 78 L60 30 L95 62 Z" fill="${body}" stroke="#4b2f52" stroke-width="5" stroke-linejoin="round"/><path d="M148 78 L140 30 L105 62 Z" fill="${body}" stroke="#4b2f52" stroke-width="5" stroke-linejoin="round"/>`,
+    bear:`<circle cx="58" cy="62" r="20" fill="${body}" stroke="#4b2f52" stroke-width="5"/><circle cx="142" cy="62" r="20" fill="${body}" stroke="#4b2f52" stroke-width="5"/><circle cx="58" cy="62" r="9" fill="${cheek}"/><circle cx="142" cy="62" r="9" fill="${cheek}"/>`,
+    sprout:`<path d="M100 62 C100 40 100 30 100 22" stroke="#4b2f52" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M100 30 C80 10 62 22 70 34 C80 44 96 36 100 30Z" fill="#8bbd6e" stroke="#4b2f52" stroke-width="4"/><path d="M100 26 C118 6 138 16 130 30 C120 40 104 32 100 26Z" fill="#8bbd6e" stroke="#4b2f52" stroke-width="4"/>`,
+    none:''
+  };
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    ${earShapes[ears]||''}
+    <path d="M30 128 C30 78 62 58 100 58 C138 58 170 78 170 128 C170 162 140 178 100 178 C60 178 30 162 30 128Z" fill="${body}" stroke="#4b2f52" stroke-width="5"/>
+    <ellipse cx="72" cy="122" rx="7" ry="9" fill="#4b2f52"/><ellipse cx="128" cy="122" rx="7" ry="9" fill="#4b2f52"/>
+    <circle cx="74.5" cy="118.5" r="2.6" fill="#fff"/><circle cx="130.5" cy="118.5" r="2.6" fill="#fff"/>
+    <ellipse cx="56" cy="140" rx="12" ry="7" fill="${cheek}" opacity=".85"/><ellipse cx="144" cy="140" rx="12" ry="7" fill="${cheek}" opacity=".85"/>
+    <path d="M90 136 Q95 142 100 136 Q105 142 110 136" stroke="#4b2f52" stroke-width="4" fill="none" stroke-linecap="round"/>
+    ${extra}
+  </svg>`;
+}
+const bow = c=>`<g transform="translate(138 74) rotate(18)"><path d="M0 0 L-20 -12 L-20 12Z M0 0 L20 -12 L20 12Z" fill="${c}" stroke="#4b2f52" stroke-width="4" stroke-linejoin="round"/><circle r="6" fill="${c}" stroke="#4b2f52" stroke-width="4"/></g>`;
+const star = (x,y,s,c)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 -10 L3 -3 L10 -3 L4 2 L6 10 L0 5 L-6 10 L-4 2 L-10 -3 L-3 -3Z" fill="${c}" stroke="#4b2f52" stroke-width="2.5" stroke-linejoin="round"/>`;
+const heart = (x,y,s,c)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 6 C-14 -4 -8 -16 0 -8 C8 -16 14 -4 0 6Z" fill="${c}" stroke="#4b2f52" stroke-width="2.5"/>`;
+const shirt = `<g transform="translate(100 166)"><path d="M-22 -14 L-10 -20 Q0 -12 10 -20 L22 -14 L18 -4 L12 -6 L12 12 L-12 12 L-12 -6 L-18 -4Z" fill="#fff" stroke="#4b2f52" stroke-width="3.5" stroke-linejoin="round"/></g>`;
+const choco = `<g transform="translate(150 150) rotate(15)"><rect x="-16" y="-20" width="32" height="40" rx="5" fill="#a0674b" stroke="#4b2f52" stroke-width="4"/><path d="M-16 -4 H16 M-16 10 H16 M0 -20 V20" stroke="#4b2f52" stroke-width="3"/></g>`;
+const cup = `<g transform="translate(150 152)"><path d="M-16 -16 H16 L12 18 H-12Z" fill="#fff" stroke="#4b2f52" stroke-width="4" stroke-linejoin="round"/><path d="M-18 -16 Q0 -30 18 -16" fill="#ddb5c9" stroke="#4b2f52" stroke-width="4"/><path d="M4 -24 L10 -40" stroke="#4b2f52" stroke-width="4" stroke-linecap="round"/></g>`;
+const brick = `<g transform="translate(150 156) rotate(-10)"><rect x="-20" y="-10" width="40" height="22" rx="4" fill="#e5a866" stroke="#4b2f52" stroke-width="4"/><rect x="-14" y="-18" width="10" height="8" rx="2" fill="#e5a866" stroke="#4b2f52" stroke-width="3.5"/><rect x="4" y="-18" width="10" height="8" rx="2" fill="#e5a866" stroke="#4b2f52" stroke-width="3.5"/></g>`;
+const box = `<g transform="translate(152 154) rotate(8)"><rect x="-18" y="-16" width="36" height="34" rx="5" fill="#fff" stroke="#4b2f52" stroke-width="4"/><text x="0" y="8" text-anchor="middle" font-family="Hachi Maru Pop" font-size="22" fill="#7f75a8">?</text></g>`;
+
+/* ---------- stops ---------- */
+const STOPS = [
+  {id:'miniso',name:'MINISO',tag:'2 cute things',c:'#b9dbe6',cd:'#3d94aa',
+   art:mascot('#f5e6ee','#d6697a','bunny',bow('#b27ea6')+star(40,70,1.3,'#eed8bc')),
+   hint:'Tiny treasures, tiny prices',
+   dir:'Warm up your cute radar here. Wander every aisle at least once before you choose. Plushies, stationery, and little gadgets are all fair game.',
+   mission:'Pick TWO cute things to buy.',
+   prompt:'Cute thing #1 and #2...'},
+  {id:'popmart',name:'POP MART',tag:'1 big or 2 small',c:'#c8b2cf',cd:'#5d3f7d',
+   art:mascot('#efe7f1','#d6697a','cat',box+star(44,64,1.2,'#bdd9c3')),
+   hint:'The blind box wonderland',
+   dir:'Next, find the land of designer toys. Look at the display walls first and pick a character that feels like your vibe today.',
+   mission:'Pick ONE larger item, or TWO smaller ones (blind boxes count!).',
+   prompt:'Who did you get? Any secret figures?'},
+  {id:'tokyo',name:'Tokyo Lifestyle',tag:'1 cute thing',c:'#b6cfe6',cd:'#3c4479',
+   art:mascot('#e8f1f8','#d6697a','bear',heart(48,66,1.3,'#d6697a')+heart(158,92,0.9,'#ddb5c9')),
+   hint:'Snacks, beauty, and tiny joys',
+   dir:'Time for a Japanese goods adventure. Peek at the snacks, the stationery, and the beauty shelves before deciding.',
+   mission:'Pick ONE cute thing.',
+   prompt:'What cute thing did you find?'},
+  {id:'uniqlo',name:'UNIQLO',tag:'1 shirt + 1 pants',c:'#bdd9c3',cd:'#4a8045',
+   art:mascot('#ebf4ed','#d6697a','bunny',shirt+star(160,70,1.1,'#ddb5c9')),
+   hint:'Outfit of the hunt',
+   dir:'Fashion stop! Hunt for the graphic tee wall (there are often character and art collabs), then find pants to match.',
+   mission:'Pick ONE cute shirt and ONE pair of pants.',
+   prompt:'Describe the outfit...'},
+  {id:'lego',name:'LEGO Store',tag:'1 tiny build',c:'#eed8bc',cd:'#c0652f',
+   art:mascot('#f8f0e4','#d6697a','bear',brick+star(42,66,1.2,'#ddb5c9')),
+   hint:'Our bonus pick ✧',
+   dir:'Bonus stop chosen just for you. Find the Pick a Brick wall or the minifigure area and make something small and cute.',
+   mission:'Pick ONE tiny build: a minifigure, a little set, or a cup of bricks in your favorite colors.',
+   prompt:'What did you build or pick?'},
+  {id:'eataly',name:'Eataly',tag:'1 sweet treat',c:'#e9c1b5',cd:'#7b3a64',
+   art:mascot('#f7ebe6','#d6697a','sprout',choco+heart(44,80,1.1,'#d6697a')),
+   hint:'A little Italian sweetness',
+   dir:'Follow your nose to the Italian market. Browse the chocolate and pastry corners and pick something that looks happy.',
+   mission:'Pick some chocolate or another treat.',
+   prompt:'What treat did you choose?'},
+  {id:'photobooth',name:'Photo Booth',tag:'1 cute photo',c:'#d4e3b8',cd:'#6c7f45',photoOnly:true,
+   art:mascot('#eef4e4','#d6697a','bear',`<g transform="translate(152 152) rotate(-8)"><rect x="-22" y="-16" width="44" height="32" rx="7" fill="#fff" stroke="#4b2f52" stroke-width="4"/><circle r="9" fill="#c8b2cf" stroke="#4b2f52" stroke-width="4"/><rect x="-14" y="-23" width="12" height="8" rx="2" fill="#fff" stroke="#4b2f52" stroke-width="3.5"/></g>`+star(44,66,1.2,'#eed8bc')+heart(160,62,0.9,'#d6697a')),
+   hint:'Strike a kawaii pose',
+   dir:'Find the photo booth store! Grab some props, pick the cutest frame, and squeeze everyone in.',
+   mission:'Take a picture together, then snap a photo of your photo strip here. No writing needed!'},
+  {id:'hellokitty',name:'Hello Kitty Cafe',tag:'1 sweet sip',c:'#ddb5c9',cd:'#ad3f78',
+   art:mascot('#f8eef3','#d6697a','cat',cup+bow('#ddb5c9')),
+   hint:'The grand finale',
+   dir:'Last stop! Head to the character cafe for a pink and pastel finish. Lines can be long, so this is a great place to rest and compare your haul.',
+   mission:'Pick ONE treat or drink to celebrate.',
+   prompt:'What did you order?'}
+];
+
+/* ---------- firebase ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyBtGtZ9vkDCraCUdwKgDovmxqqysVrX05w",
+  authDomain: "digitalselfquilt.firebaseapp.com",
+  databaseURL: "https://digitalselfquilt-default-rtdb.firebaseio.com",
+  projectId: "digitalselfquilt",
+  storageBucket: "digitalselfquilt.firebasestorage.app",
+  messagingSenderId: "902474023892",
+  appId: "1:902474023892:web:1258a3d078c7c2ee734c41",
+  measurementId: "G-VQJDG5X9T2"
+};
+let db=null;
+try{firebase.initializeApp(firebaseConfig);db=firebase.database()}catch(e){console.warn('Firebase unavailable, playing offline',e)}
+
+function capybara(){
+  const ink='#4b2f52';
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="56" cy="70" r="13" fill="#9fc79f" stroke="${ink}" stroke-width="5"/><circle cx="144" cy="70" r="13" fill="#9fc79f" stroke="${ink}" stroke-width="5"/>
+    <path d="M32 120 C32 80 58 62 100 62 C142 62 168 80 168 120 L168 140 C168 168 142 180 100 180 C58 180 32 168 32 140Z" fill="#bfdcc4" stroke="${ink}" stroke-width="5"/>
+    <path d="M62 146 C62 126 80 118 100 118 C120 118 138 126 138 146 C138 164 122 172 100 172 C78 172 62 164 62 146Z" fill="#9fc79f" stroke="${ink}" stroke-width="4.5"/>
+    <ellipse cx="88" cy="134" rx="4" ry="3" fill="${ink}"/><ellipse cx="112" cy="134" rx="4" ry="3" fill="${ink}"/>
+    <path d="M92 152 Q100 158 108 152" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M62 104 Q70 98 78 104" stroke="${ink}" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M122 104 Q130 98 138 104" stroke="${ink}" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <ellipse cx="50" cy="128" rx="10" ry="6" fill="#d6697a" opacity=".7"/><ellipse cx="150" cy="128" rx="10" ry="6" fill="#d6697a" opacity=".7"/>
+    <circle cx="100" cy="52" r="15" fill="#e5a866" stroke="${ink}" stroke-width="4.5"/><path d="M100 38 C104 30 114 30 116 34 C110 38 104 38 100 38Z" fill="#8bbd6e" stroke="${ink}" stroke-width="3.5" stroke-linejoin="round"/>
+  </svg>`;
+}
+const PLAYERS={
+  p1:{label:'Player 1',color:'#eed8bc',art:()=>mascot('#f3d3e1','#d6697a','bunny',bow('#e5a866')+star(52,72,1.1,'#e5a866'))},
+  p2:{label:'Player 2',color:'#bdd9c3',art:capybara}
+};
+const other=p=>p==='p1'?'p2':'p1';
+const cleanRoom=r=>(r||'').toLowerCase().trim().replace(/[^a-z0-9_-]/g,'-')||'valleyfair';
+
+/* local settings + cache */
+const KEY='kawaiiHunt_v2';
+let cfg={me:'',name:'',room:''};
+let cache={};             // last known players data, for offline
+try{const s=JSON.parse(localStorage.getItem(KEY));if(s){cfg=s.cfg||cfg;cache=s.cache||{}}}catch(e){}
+function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify({cfg,cache}))}catch(e){}}
+
+let data={};              // {p1:{name,stops},p2:{...}}
+let myStops={};
+let roomRef=null,started=false,shownFinale=false;
+
+const $=s=>document.querySelector(s);
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('show',s.id===id));window.scrollTo({top:0,behavior:'smooth'})}
+function toast(msg){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600)}
+const nameOf=p=>(data[p]&&data[p].name)||PLAYERS[p].label;
+const countOf=stops=>STOPS.filter(s=>stops&&stops[s.id]&&stops[s.id].done).length;
+const myRef=path=>db&&roomRef?roomRef.child(`players/${cfg.me}${path?'/'+path:''}`):null;
+
+function pushStop(id,obj){
+  myStops[id]={...(myStops[id]||{}),...obj};
+  data[cfg.me]={...(data[cfg.me]||{}),stops:myStops};
+  cache=data;saveLocal();
+  const r=myRef('stops/'+id);if(r)r.update(obj).catch(()=>toast('Could not sync, will keep trying'));
+}
+let noteTimers={};
+function pushNoteSoon(id,val){myStops[id]={...(myStops[id]||{}),note:val};clearTimeout(noteTimers[id]);noteTimers[id]=setTimeout(()=>pushStop(id,{note:val}),500)}
+
+const stampSVG=(c)=>`<svg viewBox="0 0 120 120"><g><circle cx="60" cy="60" r="52" fill="${c}" stroke="#4b2f52" stroke-width="5"/><circle cx="60" cy="60" r="42" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="5 6"/><text x="60" y="56" text-anchor="middle" font-family="Hachi Maru Pop" font-size="17" fill="#4b2f52">FOUND</text><text x="60" y="78" text-anchor="middle" font-family="Hachi Maru Pop" font-size="17" fill="#4b2f52">IT!</text>${heart(60,96,0.9,'#fff')}</g></svg>`;
+function mapLink(name){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(name+' Westfield Valley Fair')}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- cards ---------- */
+function render(){
+  const wrap=$('#cards');wrap.innerHTML='';
+  STOPS.forEach((s,i)=>{
+    const st=myStops[s.id]||{};
+    const el=document.createElement('div');
+    el.className='card'+(st.done?' done':'');el.dataset.id=s.id;
+    el.style.setProperty('--c',s.c);el.style.setProperty('--cd',s.cd);
+    el.innerHTML=`
+      <div class="card-inner">
+        <div class="face front" role="button" tabindex="0" aria-label="Flip card for ${s.name}">
+          <div class="num">${i+1}</div><div class="tag">${s.tag}</div>
+          <div class="mascot">${s.art}</div>
+          <h2>${s.name}</h2>
+          <div class="hint">${s.hint}</div>
+          <div class="tap">${st.done?'♡ collected ♡':'tap to flip ✧'}</div>
+          <div class="friend"></div>
+        </div>
+        <div class="face back">
+          <div class="top"><h3>Stop ${i+1}: ${s.name}</h3><button class="flipback" aria-label="Flip back">↺</button></div>
+          <div class="body">
+            <p class="section-label">✿ DIRECTIONS</p>
+            <div class="direction">${s.dir}<br><a class="maplink" href="${mapLink(s.name)}" target="_blank" rel="noopener">Find it on the map ↗</a></div>
+            <p class="section-label">✿ YOUR MISSION</p>
+            <p class="mission">${s.mission}</p>
+            ${s.photoOnly?'':`<textarea placeholder="${s.prompt}">${esc(st.note||'')}</textarea>`}
+            <div class="photo-row"${s.photoOnly?' style="flex-direction:column;align-items:stretch"':''}>
+              <label class="btn ${s.photoOnly?'':'white small'} photo-btn">📷 ${s.photoOnly?(st.photo?'Retake photo':'Take your picture'):'Add photo'}<input type="file" accept="image/*" capture="environment"></label>
+              <img class="thumb ${st.photo?'has':''}" ${st.photo?`src="${st.photo}"`:''} alt=""${s.photoOnly?' style="width:100%;height:150px"':''}>
+            </div>
+            <button class="btn found">${st.done?'Collected! (tap to undo)':'Found it! ♡'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="stamp">${stampSVG(PLAYERS[cfg.me].color)}</div>`;
+    const flip=()=>el.classList.toggle('flipped');
+    el.querySelector('.front').addEventListener('click',flip);
+    el.querySelector('.front').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}});
+    el.querySelector('.flipback').addEventListener('click',flip);
+    const ta=el.querySelector('textarea');
+    if(ta)ta.addEventListener('input',e=>pushNoteSoon(s.id,e.target.value));
+    el.querySelector('input[type=file]').addEventListener('change',e=>{
+      const f=e.target.files[0];if(!f)return;
+      shrink(f,url=>{pushStop(s.id,{photo:url});const t=el.querySelector('.thumb');t.src=url;t.classList.add('has');toast('Cute photo saved ✧')});
+    });
+    el.querySelector('.found').addEventListener('click',()=>{
+      const cur=myStops[s.id]||{};
+      if(s.photoOnly&&!cur.done&&!cur.photo){toast('Take your picture first! 📷');return}
+      const nowDone=!cur.done;
+      pushStop(s.id,{done:nowDone,at:nowDone?Date.now():null});
+      if(nowDone){burst(40);toast(['Yay!','So cute!','Kawaii!','Sugoi!','Adorable!'][Math.floor(Math.random()*5)]+' Stamp earned ♡')}
+      render();updateScores();
+      if(nowDone&&countOf(myStops)===STOPS.length){setTimeout(()=>finale(true),900)}
+      else if(nowDone){const next=$('#cards').children[i+1];if(next)setTimeout(()=>next.scrollIntoView({behavior:'smooth',block:'center'}),700)}
+    });
+    wrap.appendChild(el);
+  });
+  updateFriendBadges();
+}
+
+function updateFriendBadges(){
+  const fr=(data[other(cfg.me)]||{}).stops||{};
+  document.querySelectorAll('.card').forEach(el=>{
+    const b=el.querySelector('.friend');const done=fr[el.dataset.id]&&fr[el.dataset.id].done;
+    b.textContent=`${nameOf(other(cfg.me))} found it ♡`;b.classList.toggle('on',!!done);
+  });
+}
+
+function shrink(file,cb){
+  const r=new FileReader();
+  r.onload=()=>{const img=new Image();img.onload=()=>{
+    const max=420,sc=Math.min(1,max/Math.max(img.width,img.height));
+    const c=document.createElement('canvas');c.width=img.width*sc;c.height=img.height*sc;
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.7))};img.src=r.result};
+  r.readAsDataURL(file);
+}
+
+/* ---------- scoreboard ---------- */
+function updateScores(){
+  const box=$('#score');box.innerHTML='';
+  ['p1','p2'].forEach(p=>{
+    const n=countOf(p===cfg.me?myStops:(data[p]||{}).stops),pct=n/STOPS.length*100;
+    const d=document.createElement('div');d.style.marginBottom='12px';
+    d.innerHTML=`<div class="row"><span class="who">${esc(nameOf(p))}${p===cfg.me?' <span class="me-tag">you</span>':''}</span><span>${n} / ${STOPS.length}</span></div>
+      <div class="track"><div class="fill ${p}" style="width:${pct}%"></div><div class="runner" style="left:${Math.max(4,Math.min(96,pct))}%">${PLAYERS[p].art()}</div></div>`;
+    box.appendChild(d);
+  });
+}
+
+/* ---------- finale ---------- */
+function haulList(p){
+  const stops=p===cfg.me?myStops:((data[p]||{}).stops||{});
+  const n=countOf(stops);
+  let html=`<p class="haul-title">${esc(nameOf(p))}'s haul <small>${n===STOPS.length?'all done ♡':'still hunting... '+n+'/'+STOPS.length}</small></p><ul class="haul">`;
+  STOPS.forEach(s=>{const st=stops[s.id]||{};
+    const txt=!st.done?'(not yet)':s.photoOnly?'Our photo booth moment ♡':(st.note||'(a cute secret)');
+    html+=`<li style="--c:${s.c};${st.done?'':'opacity:.5'}">${st.photo?`<img src="${st.photo}" alt="">`:`<div class="dot">♡</div>`}<div><b>${s.name}</b><span>${esc(txt)}</span></div></li>`});
+  return html+'</ul>';
+}
+function finale(celebrate){
+  const me=cfg.me,fr=other(me);
+  const myN=countOf(myStops),frStops=(data[fr]||{}).stops||{},frN=countOf(frStops);
+  const lastAt=st=>Math.max(0,...STOPS.map(s=>(st[s.id]&&st[s.id].at)||0));
+  let win='';
+  if(myN===STOPS.length&&frN===STOPS.length){const a=lastAt(myStops),b=lastAt(frStops);win=`${esc(a<=b?nameOf(me):nameOf(fr))} finished first! ✧`}
+  else if(myN===STOPS.length){win='You finished first! ✧'}
+  $('#finaleHead').textContent=myN===STOPS.length?'You did it!':'Haul check';
+  $('#winner').innerHTML=win?`<span class="winner">${win}</span>`:'';
+  $('#finaleMascot').innerHTML=mascot('#f5e6ee','#d6697a','bunny',bow('#b27ea6')+star(40,70,1.3,'#eed8bc')+star(165,96,1,'#bdd9c3')+heart(160,60,1.1,'#d6697a'));
+  $('#haulLists').innerHTML=haulList(me)+haulList(fr);
+  show('finale');if(celebrate)burst(220);
+}
+
+/* ---------- sync ---------- */
+function setSync(live,msg){const s=$('#sync');s.classList.toggle('live',live);s.innerHTML=`<b></b>${msg}`}
+function connect(){
+  if(roomRef)roomRef.off();
+  data=cache&&cache._room===cfg.room?cache:{};
+  myStops=((data[cfg.me]||{}).stops)||{};
+  data[cfg.me]={...(data[cfg.me]||{}),name:cfg.name||PLAYERS[cfg.me].label};
+  shownFinale=false;
+  start();                                   // always go straight to the cards
+  if(!db){setSync(false,'offline mode: only your phone is saved');return}
+  let blocked=false,first=true;
+  const blockedMsg=()=>{blocked=true;setSync(false,'sync blocked: check your Firebase database rules (cards still work)')};
+  setSync(false,'connecting...');
+  roomRef=db.ref('kawaiiHunt/'+cfg.room);
+  myRef('name').set(cfg.name||PLAYERS[cfg.me].label).catch(blockedMsg);
+  db.ref('.info/connected').on('value',s=>{if(!blocked)setSync(!!s.val(),s.val()?`live in hunt "${cfg.room}"`:'connecting...')});
+  roomRef.child('players').on('value',snap=>{
+    const prevFr=countOf((data[other(cfg.me)]||{}).stops);
+    data=snap.val()||{};data._room=cfg.room;
+    const remoteMine=((data[cfg.me]||{}).stops)||{};
+    if(first){first=false;
+      if(Object.keys(remoteMine).length){myStops={...myStops,...remoteMine};render()}
+      else if(Object.keys(myStops).length){myRef('stops').update(myStops).catch(blockedMsg)}
+    }
+    data[cfg.me]={...(data[cfg.me]||{}),name:cfg.name||PLAYERS[cfg.me].label,stops:myStops};
+    cache=data;saveLocal();
+    const frN=countOf((data[other(cfg.me)]||{}).stops);
+    if(frN>prevFr&&!first){toast(`${nameOf(other(cfg.me))} earned a stamp! ${frN}/${STOPS.length}`);if(frN===STOPS.length)burst(80)}
+    updateScores();updateFriendBadges();
+    if($('#finale').classList.contains('show'))finale(false);
+  },blockedMsg);
+}
+function start(){started=true;render();updateScores();show('hunt')}
+
+/* ---------- sparkles + wiring ---------- */
+
+/* ---------- confetti ---------- */
+const cv=$('#confetti'),cx=cv.getContext('2d');let bits=[];
+function size(){cv.width=innerWidth*devicePixelRatio;cv.height=innerHeight*devicePixelRatio;cx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener('resize',size);size();
+const COLS=['#ddb5c9','#c8b2cf','#bdd9c3','#eed8bc','#e9c1b5','#b6cfe6','#7fc0d6','#d6697a','#e5a866','#a8bd72','#a678a6'];
+function burst(n){for(let i=0;i<n;i++)bits.push({x:innerWidth/2+(Math.random()-.5)*120,y:innerHeight*.45,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:Math.random()*6+4,c:COLS[i%COLS.length],rot:Math.random()*6,vr:(Math.random()-.5)*.3,shape:Math.floor(Math.random()*3),life:0});if(!raf)loop()}
+let raf=null;
+function loop(){cx.clearRect(0,0,innerWidth,innerHeight);
+  bits.forEach(b=>{b.vy+=.35;b.vx*=.99;b.x+=b.vx;b.y+=b.vy;b.rot+=b.vr;b.life++;
+    cx.save();cx.translate(b.x,b.y);cx.rotate(b.rot);cx.fillStyle=b.c;cx.strokeStyle='#4b2f52';cx.lineWidth=1.5;cx.beginPath();
+    if(b.shape===0){cx.arc(0,0,b.r,0,7)}
+    else if(b.shape===1){cx.moveTo(0,b.r*.6);cx.bezierCurveTo(-b.r*1.6,-b.r*.4,-b.r*.7,-b.r*1.6,0,-b.r*.6);cx.bezierCurveTo(b.r*.7,-b.r*1.6,b.r*1.6,-b.r*.4,0,b.r*.6)}
+    else{for(let k=0;k<10;k++){const a=k*Math.PI/5,rr=k%2?b.r*.45:b.r;cx.lineTo(Math.cos(a)*rr,Math.sin(a)*rr)}cx.closePath()}
+    cx.fill();cx.stroke();cx.restore()});
+  bits=bits.filter(b=>b.y<innerHeight+40&&b.life<400);
+  raf=bits.length?requestAnimationFrame(loop):(cx.clearRect(0,0,innerWidth,innerHeight),null)}
+
+/* ---------- floating sparkles ---------- */
+['✦','♡','✿','✧','☆','♡','✦','✿'].forEach((ch,i)=>{const s=document.createElement('div');s.className='sparkle';s.textContent=ch;
+  s.style.cssText+=`left:${(i*13+5)%95}%;top:${(i*23+8)%90}%;font-size:${16+(i%3)*8}px;color:${COLS[i%COLS.length]};animation-delay:${i*.7}s;text-shadow:1px 1px 0 #4b2f52`;
+  document.body.appendChild(s)});
+
+/* ---------- wiring ---------- */
+$('#pickArt1').innerHTML=PLAYERS.p1.art();$('#pickArt2').innerHTML=PLAYERS.p2.art();
+let picked=cfg.me||'';
+function paintPick(){document.querySelectorAll('#pick button').forEach(b=>b.classList.toggle('on',b.dataset.p===picked))}
+document.querySelectorAll('#pick button').forEach(b=>b.addEventListener('click',()=>{picked=b.dataset.p;paintPick()}));
+paintPick();
+$('#name').value=cfg.name||'';$('#room').value=cfg.room||'';
+$('#go').addEventListener('click',()=>{
+  if(!picked){toast('Pick Player 1 or Player 2 ♡');return}
+  cfg={me:picked,name:$('#name').value.trim(),room:cleanRoom($('#room').value)};
+  $('#room').value=cfg.room;saveLocal();connect();burst(60);
+});
+$('#switchBtn').addEventListener('click',()=>{if(roomRef)roomRef.off();show('start')});
+$('#resetBtn').addEventListener('click',()=>{
+  if(!confirm('Clear all of YOUR stamps, notes, and photos in this hunt? Your friend keeps theirs.'))return;
+  myStops={};data[cfg.me]={name:cfg.name,stops:{}};cache=data;saveLocal();
+  const r=myRef('stops');if(r)r.remove();
+  render();updateScores();toast('Fresh cards ✧');
+});
+$('#hauls').addEventListener('click',()=>finale(false));
+$('#backBtn').addEventListener('click',()=>{show('hunt')});
+
+if(cfg.me&&cfg.room){connect()}else{show('start')}
+</script>
+</body>
+</html>
