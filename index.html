@@ -113,6 +113,17 @@ textarea{min-height:62px;resize:vertical;font-size:15px}
 
 .footer-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
 
+/* reset menu */
+.modal{position:fixed;inset:0;z-index:60;background:rgba(75,47,82,.35);display:none;align-items:flex-end;justify-content:center;padding:16px}
+.modal.show{display:flex;animation:pop .25s ease}
+.sheet{background:#fff;border:3px solid var(--ink);border-radius:28px;box-shadow:6px 6px 0 var(--ink);width:100%;max-width:440px;padding:20px;margin-bottom:12px}
+.sheet h3{margin:0 0 4px;font-size:22px;text-align:center}
+.sheet p.sub{margin:0 0 14px;text-align:center;color:var(--ink-soft);font-weight:500}
+.opt{display:block;width:100%;text-align:left;border:3px solid var(--ink);border-radius:20px;padding:12px 14px;margin:10px 0;background:var(--oc,#fff);box-shadow:3px 3px 0 var(--ink);color:var(--ink);font-size:16px}
+.opt:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.opt b{display:block;font-size:17px}
+.opt span{font-size:14px;opacity:.8}
+.sheet .cancel{width:100%;margin-top:6px}
 /* toast + confetti */
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120px);background:#fff;border:3px solid var(--ink);border-radius:999px;padding:10px 20px;font-weight:700;box-shadow:4px 4px 0 var(--ink);z-index:50;transition:transform .4s cubic-bezier(.3,1.6,.5,1);white-space:nowrap}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -186,8 +197,7 @@ textarea{min-height:62px;resize:vertical;font-size:15px}
     <div class="cards" id="cards"></div>
     <div class="footer-actions">
       <button class="btn lav small" id="hauls">See both hauls</button>
-      <button class="btn white small" id="switchBtn">Switch player or code</button>
-      <button class="btn white small" id="resetBtn">Clear my cards</button>
+      <button class="btn white small" id="resetBtn">Reset ⟲</button>
     </div>
   </section>
 
@@ -200,9 +210,21 @@ textarea{min-height:62px;resize:vertical;font-size:15px}
       <div id="haulLists"></div>
       <div class="footer-actions">
         <button class="btn lav" id="backBtn">Back to cards</button>
+        <button class="btn white" id="resetBtn2">Reset ⟲</button>
       </div>
     </div>
   </section>
+</div>
+<div class="modal" id="resetMenu">
+  <div class="sheet" role="dialog" aria-label="Reset options">
+    <h3>Reset ⟲</h3>
+    <p class="sub" id="resetSub">What would you like to do?</p>
+    <button class="opt" data-act="mine" style="--oc:#eed8bc"><b>Clear my cards</b><span>Erase only your stamps, notes, and photos. Your friend keeps theirs.</span></button>
+    <button class="opt" data-act="all" style="--oc:#e9c1b5"><b>Reset the hunt for both players</b><span>Erase everything in this hunt code and start fresh on both phones.</span></button>
+    <button class="opt" data-act="full" style="--oc:#c8b2cf"><b>Start completely over</b><span>Erase every hunt and all progress, and send both phones back to the very first screen.</span></button>
+    <button class="opt" data-act="switch" style="--oc:#bdd9c3"><b>Switch player or hunt code</b><span>Go back to the start screen. Nothing gets erased.</span></button>
+    <button class="btn white cancel" data-act="cancel">Never mind</button>
+  </div>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -325,6 +347,8 @@ const KEY='kawaiiHunt_v2';
 let cfg={me:'',name:'',room:''};
 let cache={};             // last known players data, for offline
 try{const s=JSON.parse(localStorage.getItem(KEY));if(s){cfg=s.cfg||cfg;cache=s.cache||{}}}catch(e){}
+let seenReset={};try{seenReset=JSON.parse(localStorage.getItem(KEY+'_reset'))||{}}catch(e){}
+function saveSeen(){try{localStorage.setItem(KEY+'_reset',JSON.stringify(seenReset))}catch(e){}}
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify({cfg,cache}))}catch(e){}}
 
 let data={};              // {p1:{name,stops},p2:{...}}
@@ -480,6 +504,26 @@ function connect(){
   roomRef=db.ref('kawaiiHunt/'+cfg.room);
   myRef('name').set(cfg.name||PLAYERS[cfg.me].label).catch(blockedMsg);
   db.ref('.info/connected').on('value',s=>{if(!blocked)setSync(!!s.val(),s.val()?`live in hunt "${cfg.room}"`:'connecting...')});
+  const clearLocalMine=()=>{myStops={};data[cfg.me]={name:cfg.name||PLAYERS[cfg.me].label,stops:{}};cache=data;saveLocal();render();updateScores()};
+  const room=cfg.room;
+  roomRef.child('resetAt').once('value').then(rs=>{
+    if(room!==cfg.room)return;
+    const v=rs.val()||0;
+    if(v&&seenReset[room]!==v){if(seenReset[room]!==undefined||Object.keys(myStops).length)clearLocalMine();seenReset[room]=v;saveSeen()}
+    if(seenReset[room]===undefined){seenReset[room]=v;saveSeen()}
+    roomRef.child('resetAt').on('value',r2=>{
+      const nv=r2.val()||0;
+      if(nv&&nv!==seenReset[room]){seenReset[room]=nv;saveSeen();
+        roomRef.child('full').once('value').then(f=>{
+          if(f.val()){if(!iResetIt){wipeThisPhone();toast('The game was started over ✧');burst(40)}iResetIt=false;return}
+          clearLocalMine();myRef('name').set(cfg.name||PLAYERS[cfg.me].label).catch(()=>{});
+          if(!iResetIt){toast('The hunt was reset. Fresh cards ✧');burst(40)}
+          iResetIt=false});
+      }
+    });
+    listenPlayers();
+  }).catch(()=>{blockedMsg();});
+  function listenPlayers(){
   roomRef.child('players').on('value',snap=>{
     const prevFr=countOf((data[other(cfg.me)]||{}).stops);
     data=snap.val()||{};data._room=cfg.room;
@@ -495,6 +539,15 @@ function connect(){
     updateScores();updateFriendBadges();
     if($('#finale').classList.contains('show'))finale(false);
   },blockedMsg);
+  }
+}
+let iResetIt=false;
+function wipeThisPhone(){
+  if(roomRef)roomRef.off();roomRef=null;
+  cfg={me:'',name:'',room:''};cache={};data={};myStops={};picked='';
+  try{localStorage.removeItem(KEY)}catch(e){}
+  paintPick();$('#name').value='';$('#room').value='';
+  $('#cards').innerHTML='';show('start');
 }
 function start(){started=true;render();updateScores();show('hunt')}
 
@@ -534,13 +587,37 @@ $('#go').addEventListener('click',()=>{
   cfg={me:picked,name:$('#name').value.trim(),room:cleanRoom($('#room').value)};
   $('#room').value=cfg.room;saveLocal();connect();burst(60);
 });
-$('#switchBtn').addEventListener('click',()=>{if(roomRef)roomRef.off();show('start')});
-$('#resetBtn').addEventListener('click',()=>{
-  if(!confirm('Clear all of YOUR stamps, notes, and photos in this hunt? Your friend keeps theirs.'))return;
-  myStops={};data[cfg.me]={name:cfg.name,stops:{}};cache=data;saveLocal();
-  const r=myRef('stops');if(r)r.remove();
-  render();updateScores();toast('Fresh cards ✧');
-});
+function openReset(){
+  $('#resetSub').textContent=`Hunt code "${cfg.room}" · you are ${nameOf(cfg.me)}`;
+  $('#resetMenu').classList.add('show');
+}
+function closeReset(){$('#resetMenu').classList.remove('show')}
+$('#resetBtn').addEventListener('click',openReset);$('#resetBtn2').addEventListener('click',openReset);
+$('#resetMenu').addEventListener('click',e=>{if(e.target.id==='resetMenu')closeReset()});
+$('#resetMenu').querySelectorAll('[data-act]').forEach(btn=>btn.addEventListener('click',()=>{
+  const act=btn.dataset.act;
+  if(act==='cancel'){closeReset();return}
+  if(act==='switch'){closeReset();if(roomRef)roomRef.off();show('start');return}
+  if(act==='mine'){
+    if(!confirm('Erase YOUR stamps, notes, and photos? Your friend keeps theirs.'))return;
+    myStops={};data[cfg.me]={name:cfg.name||PLAYERS[cfg.me].label,stops:{}};cache=data;saveLocal();
+    const r=myRef('stops');if(r)r.remove();
+    closeReset();render();updateScores();show('hunt');toast('Fresh cards ✧');return}
+  if(act==='all'){
+    if(!confirm(`Reset hunt "${cfg.room}" for BOTH players? All stamps, notes, and photos will be erased.`))return;
+    closeReset();
+    myStops={};data={};data[cfg.me]={name:cfg.name||PLAYERS[cfg.me].label,stops:{}};cache=data;saveLocal();
+    render();updateScores();show('hunt');
+    if(roomRef){iResetIt=true;roomRef.set({resetAt:Date.now()}).then(()=>{myRef('name').set(cfg.name||PLAYERS[cfg.me].label)}).catch(()=>toast('Could not reach Firebase to reset'))}
+    toast('Hunt reset for both players ✧');burst(60)}
+  if(act==='full'){
+    if(!confirm('Start the whole game completely over? This erases EVERY hunt code and all stamps, notes, and photos, and sends both phones back to the start screen.'))return;
+    closeReset();
+    const room=cfg.room,t=Date.now();
+    if(db){seenReset[room]=t;saveSeen();
+      db.ref('kawaiiHunt').set({[room]:{resetAt:t,full:true}}).catch(()=>toast('Could not reach Firebase to reset'))}
+    wipeThisPhone();toast('Game started over ✧');burst(80)}
+}));
 $('#hauls').addEventListener('click',()=>finale(false));
 $('#backBtn').addEventListener('click',()=>{show('hunt')});
 
